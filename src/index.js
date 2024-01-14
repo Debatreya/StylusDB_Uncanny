@@ -28,18 +28,18 @@ async function executeSELECTQuery(query) {
         const joinData = await readCSV(`${joinTable}.csv`);
         switch (joinType.toUpperCase()) {
             case 'INNER':
-                data = performInnerJoin(data, joinData, joinCondition, fields, table);
+                data = await performInnerJoin(data, joinData, joinCondition, fields, table);
                 break;
             case 'LEFT':
-                data = performLeftJoin(data, joinData, joinCondition, fields, table);
+                data = await performLeftJoin(data, joinData, joinCondition, fields, table);
                 break;
             case 'RIGHT':
-                data = performRightJoin(data, joinData, joinCondition, fields, table);
+                data = await performRightJoin(data, joinData, joinCondition, fields, table);
                 break;
             // Handle default case or unsupported JOIN types
         }
     }
-
+    // console.log(data);
     // Apply WHERE clause filtering
     const filteredData = whereClauses && whereClauses.length > 0
         ? data.filter(row => whereClauses.every(clause => evaluateCondition(row, clause)))
@@ -74,16 +74,67 @@ async function performInnerJoin(data, joinData, joinCondition, fields, table) {
                 }, {});
             });
     });
+    return data;
 }
 
-function performLeftJoin(/* parameters */) {
-    // Logic for LEFT JOIN
-    // ...
+async function performLeftJoin(data, joinData, joinCondition, fields, table) {
+    const result = data.map(mainRow => {
+        const matchingRows = joinData.filter(joinRow => {
+            const mainValue = mainRow[joinCondition.left.split('.')[1]];
+            const joinValue = joinRow[joinCondition.right.split('.')[1]];
+            return mainValue === joinValue;
+        });
+        // console.log(matchingRows.length);
+        if (matchingRows.length === 0) {
+            // If no match found in joinData, create a row with null values for joinData fields
+            return {
+                ...fields.reduce((acc, field) => {
+                    const [tableName, fieldName] = field.split('.');
+                    acc[field] = tableName === table ? mainRow[fieldName] : null;
+                    return acc;
+                }, {}),
+            };
+        }
+
+        return matchingRows.map(joinRow => {
+            return fields.reduce((acc, field) => {
+                const [tableName, fieldName] = field.split('.');
+                acc[field] = tableName === table ? mainRow[fieldName] : joinRow[fieldName];
+                return acc;
+            }, {});
+        });
+    }).flat();
+    
+    return result;
 }
 
-function performRightJoin(/* parameters */) {
-    // Logic for RIGHT JOIN
-    // ...
+
+async function performRightJoin(data, joinData, joinCondition, fields, table) {
+    const result = joinData.map(joinRow => {
+        const matchingRows = data.filter(mainRow => {
+            const mainValue = mainRow[joinCondition.left.split('.')[1]];
+            const joinValue = joinRow[joinCondition.right.split('.')[1]];
+            return mainValue === joinValue;
+        });
+
+        return matchingRows.length > 0
+            ? matchingRows.map(mainRow => {
+                return fields.reduce((acc, field) => {
+                    const [tableName, fieldName] = field.split('.');
+                    acc[field] = tableName === table ? mainRow[fieldName] : joinRow[fieldName];
+                    return acc;
+                }, {});
+            })
+            : {
+                ...fields.reduce((acc, field) => {
+                    const [tableName, fieldName] = field.split('.');
+                    acc[field] = tableName === table ? null : joinRow[fieldName];
+                    return acc;
+                }, {}),
+            };
+    }).flat();
+    // console.log(result);
+    return result;
 }
 
 

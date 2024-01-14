@@ -5,7 +5,7 @@ function parseQuery(query) {
     query = query.trim();
 
     // Initialize variables for different parts of the query
-    let selectPart, fromPart;
+    let selectPart;
 
     // Split the query at the WHERE clause if it exists
     const whereSplit = query.split(/\sWHERE\s/i);
@@ -15,11 +15,12 @@ function parseQuery(query) {
     const whereClause = whereSplit.length > 1 ? whereSplit[1].trim() : null;
 
     // Split the remaining query at the JOIN clause if it exists
-    const joinSplit = query.split(/\sINNER JOIN\s/i);
-    selectPart = joinSplit[0].trim(); // Everything before JOIN clause
+    const joinSplit = query.split(/\b(INNER JOIN|LEFT JOIN|RIGHT JOIN)\b/i);
+    // console.log(joinSplit);
+    selectPart = joinSplit[0].trim(); // Everything before JOIN clause (SELECT + FROM)
 
     // JOIN clause is the second part after splitting, if it exists
-    const joinPart = joinSplit.length > 1 ? joinSplit[1].trim() : null;
+    const joinPart = joinSplit.length > 1 ? (joinSplit[2]).trim() : null;
 
     // Parse the SELECT part
     const selectRegex = /^SELECT\s(.+?)\sFROM\s(.+)/i;
@@ -33,7 +34,9 @@ function parseQuery(query) {
     // Parse the JOIN part if it exists
     let joinTable = null, joinCondition = null, joinType = null;
     if (joinPart) {
-        ({ joinType, joinTable, joinCondition } = parseJoinClause(joinPart));
+        joinType = joinSplit[1].match(/\b(INNER|RIGHT|LEFT)\b/i)[0].trim();
+        // console.log(joinType);
+        ({ joinTable, joinCondition } = parseJoinClause(joinPart));
     }
 
 
@@ -68,22 +71,21 @@ function parseWhereClause(whereString) {
 
 
 function parseJoinClause(query) {
-    const joinRegex = /\s(INNER|LEFT|RIGHT) JOIN\s(.+?)\sON\s([\w.]+)\s*=\s*([\w.]+)/i;
+    // console.log(query);
+    const joinRegex = /\s*([\w.]+)\s*ON\s*([\w.]+)\s*=\s*([\w.]+)/i;
     const joinMatch = query.match(joinRegex);
-
+    // console.log(joinMatch);
     if (joinMatch) {
         return {
-            joinType: joinMatch[1].trim(),
-            joinTable: joinMatch[2].trim(),
+            joinTable: joinMatch[1].trim(),
             joinCondition: {
-                left: joinMatch[3].trim(),
-                right: joinMatch[4].trim()
+                left: joinMatch[2].trim(),
+                right: joinMatch[3].trim()
             }
         };
     }
 
     return {
-        joinType: null,
         joinTable: null,
         joinCondition: null
     };

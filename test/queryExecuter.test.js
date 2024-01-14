@@ -67,3 +67,65 @@ test('Execute SQL Query with INNER JOIN and a WHERE Clause', async () => {
         ]
     );
 });
+
+
+test('Execute SQL Query with LEFT JOIN and a WHERE Clause', async () => {
+    const query = 'SELECT student.name, enrollment.course FROM student LEFT JOIN enrollment ON student.id=enrollment.student_id';
+    const result = await executeSELECTQuery(query);
+    // console.log(result);
+    expect(result).toEqual(
+        [
+            {
+              'student.name': 'John',
+              'enrollment.course': 'Mathematics'
+            },
+            {
+              'student.name': 'John',
+              'enrollment.course': 'Physics'
+            },
+            {
+              'student.name': 'Jane',
+              'enrollment.course': 'Chemistry'
+            },
+            {
+              'student.name': 'Bob',
+              'enrollment.course': 'Mathematics'
+            },
+            {
+              'student.name': 'Alice',
+              'enrollment.course': null
+            }
+          ]
+    );
+});
+
+
+test('Execute SQL Query with RIGHT JOIN and a WHERE Clause', async () => {
+    const query = 'SELECT student.name, enrollment.course FROM student RIGHT JOIN enrollment ON student.id=enrollment.student_id';
+    const result = await executeSELECTQuery(query);
+    // console.log(result);
+    expect(result).toEqual(
+        [
+            {
+              'student.name': 'John',
+              'enrollment.course': 'Mathematics'
+            },
+            {
+              'student.name': 'John',
+              'enrollment.course': 'Physics'
+            },
+            {
+              'student.name': 'Jane',
+              'enrollment.course': 'Chemistry'
+            },
+            {
+              'student.name': 'Bob',
+              'enrollment.course': 'Mathematics'
+            },
+            {
+              'student.name': null,
+              'enrollment.course': 'Biology'
+            }
+          ]
+    );
+});

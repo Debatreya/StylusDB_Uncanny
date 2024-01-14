@@ -1,4 +1,4 @@
-const { parseQuery } = require('../src/queryParser');
+const { parseQuery, parseJoinClause } = require('../src/queryParser');
 
 test('Parse SQL Query', () => {
     const query = 'SELECT id, name FROM student';
@@ -30,7 +30,7 @@ test('Parse SQL Query with Multiple WHERE Clauses', () => {
             "operator": "=",
             "value": "John",
         }],
-        joinType: 'INNER',
+        joinType: null,
         joinTable: null,
         joinCondition: null
     });
@@ -45,6 +45,7 @@ test('Parse SQL Query with INNER JOIN', async () => {
             "fields": ["student.name", "enrollment.course"],
             "table": "student",
             "whereClauses": [],
+            "joinType": "INNER",
             "joinTable": "enrollment",
             "joinCondition": {
                 "left": "student.id",
@@ -57,6 +58,7 @@ test('Parse SQL Query with INNER JOIN', async () => {
 test('Parse SQL Query with INNER JOIN and WHERE Clause', async () => {
     const query = 'SELECT student.name, enrollment.course FROM student INNER JOIN enrollment ON student.id=enrollment.student_id WHERE student.name = John';
     const parsed = parseQuery(query);
+    // console.log(parsed);
     expect(parsed).toEqual(
         {
             "fields": ["student.name", "enrollment.course"],
@@ -66,6 +68,7 @@ test('Parse SQL Query with INNER JOIN and WHERE Clause', async () => {
                 "operator": "=",
                 "value": "John"
             }],
+            "joinType": "INNER",
             "joinTable": "enrollment",
             "joinCondition": {
                 "left": "student.id",
